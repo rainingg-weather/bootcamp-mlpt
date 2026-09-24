@@ -1,25 +1,25 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: transaction-app
+  name: profiling-app
   labels:
-    app: transaction-app
+    app: profiling-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: transaction-app
+      app: profiling-app
   template:
     metadata:
       labels:
-        app: transaction-app
+        app: profiling-app
     spec:
       containers:
-        - name: transaction-app
-          image: default-route-openshift-image-registry.apps.rm1.0a51.p1.openshiftapps.com/merisaa-dev/aplikasi-gwe:1.2.1
+        - name: profiling-app
+          image: default-route-openshift-image-registry.apps.rm1.0a51.p1.openshiftapps.com/merisaa-dev/profiling-gwe:1.0.1
           imagePullPolicy: Always
           ports:
-            - containerPort: 8000
+            - containerPort: 8001
               protocol: TCP
           env:
             - name: MONGO_URI
@@ -29,19 +29,17 @@ spec:
                   key: MONGO_URI
             - name: MONGO_DB_NAME
               value: "bootcamp"
-            - name: PROFILING_SERVICE_URL
-              value: "http://profiling-app:8001"
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: transaction-app
+  name: profiling-app
   labels:
-    app: transaction-app
+    app: profiling-app
 spec:
   ports:
     - protocol: TCP
-      port: 8000
-      targetPort: 8000
+      port: 8001
+      targetPort: 8001
   selector:
-    app: transaction-app
+    app: profiling-app

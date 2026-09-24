@@ -1,6 +1,10 @@
-fastapi[standard]>=0.136.0
-beanie>=2.2.0,<3.0.0
-pandas>=2.3.3
-pydantic-settings>=2.6.0
-openpyxl
-python-multipart
+fastapi>=0.100.0
+uvicorn>=0.22.0
+beanie>=1.21.0
+motor>=3.3.0
+pymongo>=4.5.0
+pydantic>=2.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+httpx>=0.24.0
+python-multipart>=0.0.6

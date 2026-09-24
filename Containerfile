@@ -1,21 +1,15 @@
-# Use the official Python image as the base image
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt /app/
+# Package dasar yang dibutuhkan untuk build pandas/wheels di Alpine
+RUN apk add --no-cache build-base gcc musl-dev linux-headers
 
-# Install dependencies
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the FastAPI application code into the container
 COPY . /app/
 
-# Expose the port that the FastAPI application will run on
 EXPOSE 8000
 
-# Start the FastAPI application
-CMD ["fastapi", "run"]
-
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
