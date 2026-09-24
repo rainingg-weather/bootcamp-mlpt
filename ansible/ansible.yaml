@@ -1,0 +1,143 @@
+---
+- name: Install and Configure MongoDB on VM
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    mongodb_series: "8.3"
+    mongodb_repo_url: "https://repo.mongodb.org/yum/redhat/{{ ansible_facts['distribution_major_version'] | default('9') }}/mongodb-org/{{ mongodb_series }}/x86_64/"
+    mongodb_gpg_key: https://pgp.mongodb.com/server-8.0.asc
+    mongodb_managed_marker: /var/lib/bootcamp-mongodb-lab/managed
+
+  pre_tasks:
+    - name: Validate OS compatibility before changing packages
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] in ['RedHat', 'Fedora', 'CentOS', 'Rocky', 'AlmaLinux']
+          - ansible_facts['architecture'] == 'x86_64'
+          - ansible_facts['service_mgr'] == 'systemd'
+          - mongodb_series == '8.3'
+          - not ansible_check_mode
+        fail_msg: >-
+          Gunakan VM x86_64 berbasis RedHat/Fedora dengan systemd dan Job Type Run.
+
+    - name: Read installed packages
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Check for a previous managed experiment
+      ansible.builtin.stat:
+        path: "{{ mongodb_managed_marker }}"
+      register: mongodb_managed
+
+  tasks:
+    - name: Create the experiment state directory
+      ansible.builtin.file:
+        path: /var/lib/bootcamp-mongodb-lab
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Record that this VM is managed by the experiment playbook
+      ansible.builtin.copy:
+        dest: "{{ mongodb_managed_marker }}"
+        content: "Managed by ansible/ansible.yml; MongoDB 8.3 local lab.\n"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Configure the official MongoDB Community repository
+      ansible.builtin.yum_repository:
+        name: "mongodb-org-{{ mongodb_series }}"
+        description: "MongoDB Community {{ mongodb_series }}"
+        baseurl: "{{ mongodb_repo_url }}"
+        gpgkey: "{{ mongodb_gpg_key }}"
+        gpgcheck: true
+        enabled: true
+        sslverify: true
+
+    - name: Install the latest server patch and MongoDB shell
+      ansible.builtin.dnf:
+        name:
+          - "mongodb-org-server-{{ mongodb_series }}.*"
+          - mongodb-mongosh
+        state: latest
+        update_cache: true
+        disablerepo: "mongodb-org-*"
+        enablerepo: "mongodb-org-{{ mongodb_series }}"
+        allow_downgrade: false
+      notify: Restart MongoDB
+
+    - name: Configure MongoDB for use inside the VM
+      ansible.builtin.copy:
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          storage:
+            dbPath: /var/lib/mongo
+          systemLog:
+            destination: file
+            logAppend: true
+            path: /var/log/mongodb/mongod.log
+          net:
+            port: 27017
+            bindIp: 0.0.0.0
+          processManagement:
+            timeZoneInfo: /usr/share/zoneinfo
+          security:
+            authorization: disabled
+      notify: Restart MongoDB
+
+    - name: Apply package and configuration changes before the connection test
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable and start MongoDB
+      ansible.builtin.systemd_service:
+        name: mongod
+        enabled: true
+        state: started
+
+    - name: Wait for MongoDB inside the VM
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 27017
+        state: started
+        timeout: 60
+
+    - name: Verify MongoDB responds and report its actual version
+      ansible.builtin.command:
+        argv:
+          - mongosh
+          - --quiet
+          - --host
+          - 127.0.0.1
+          - --port
+          - "27017"
+          - --eval
+          - >-
+            const result = db.getSiblingDB("admin").runCommand({ping: 1});
+            if (result.ok !== 1) { quit(1); }
+            print(JSON.stringify({ok: result.ok, version: db.version()}));
+      register: mongodb_ping
+      changed_when: false
+      retries: 6
+      delay: 5
+      until: mongodb_ping.rc == 0
+
+    - name: Show the experiment connection and running version
+      ansible.builtin.debug:
+        msg:
+          - "MongoDB version: {{ (mongodb_ping.stdout | from_json).version }}"
+          - "VM connection: mongodb://127.0.0.1:27017"
+
+  handlers:
+    - name: Restart MongoDB
+      ansible.builtin.systemd_service:
+        name: mongod
+        daemon_reload: true
+        enabled: true
+        state: restarted
