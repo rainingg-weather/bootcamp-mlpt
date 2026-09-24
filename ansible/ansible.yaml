@@ -5,9 +5,9 @@
   become: true
 
   vars:
-    mongodb_series: "8.0"
+    mongodb_series: "8.3"
     mongodb_repo_url: "https://repo.mongodb.org/yum/redhat/{{ ansible_facts['distribution_major_version'] | default('9') }}/mongodb-org/{{ mongodb_series }}/x86_64/"
-    mongodb_gpg_key: https://pgp.mongodb.com/server-8.0.asc
+    mongodb_gpg_key: https://pgp.mongodb.com/server-8.3.asc
     mongodb_managed_marker: /var/lib/bootcamp-mongodb-lab/managed
 
   pre_tasks:
