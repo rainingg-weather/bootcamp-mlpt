@@ -6,8 +6,8 @@
 
   vars:
     mongodb_series: "8.0"
-    mongodb_repo_url: "https://repo.mongodb.org/yum/redhat/{{ ansible_facts['distribution_major_version'] | default('9') }}/mongodb-org/{{ mongodb_series }}/x86_64/"
-    mongodb_gpg_key: https://pgp.mongodb.com/server-8.3.asc
+    mongodb_repo_url: "https://repo.mongodb.org/yum/redhat/9/mongodb-org/{{ mongodb_series }}/x86_64/"
+    mongodb_gpg_key: https://pgp.mongodb.com/server-8.0.asc
     mongodb_managed_marker: /var/lib/bootcamp-mongodb-lab/managed
 
   pre_tasks:
@@ -43,7 +43,7 @@
     - name: Record that this VM is managed by the experiment playbook
       ansible.builtin.copy:
         dest: "{{ mongodb_managed_marker }}"
-        content: "Managed by ansible/ansible.yml; MongoDB 8.3 local lab.\n"
+        content: "Managed by ansible/ansible.yml; MongoDB 8.0 local lab.\n"
         owner: root
         group: root
         mode: "0600"
@@ -58,16 +58,13 @@
         enabled: true
         sslverify: true
 
-    - name: Install the latest server patch and MongoDB shell
+    - name: Install MongoDB
       ansible.builtin.dnf:
         name:
-          - "mongodb-org-server-{{ mongodb_series }}.*"
-          - mongodb-mongosh
+          - mongodb-org
         state: latest
         update_cache: true
-        disablerepo: "mongodb-org-*"
         enablerepo: "mongodb-org-{{ mongodb_series }}"
-        allow_downgrade: false
       notify: Restart MongoDB
 
     - name: Configure MongoDB for use inside the VM
