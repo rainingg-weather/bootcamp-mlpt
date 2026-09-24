@@ -17,7 +17,7 @@
           - ansible_facts['distribution'] in ['RedHat', 'Fedora', 'CentOS', 'Rocky', 'AlmaLinux']
           - ansible_facts['architecture'] == 'x86_64'
           - ansible_facts['service_mgr'] == 'systemd'
-          - mongodb_series == '8.3'
+          - mongodb_series == '8.0'
           - not ansible_check_mode
         fail_msg: >-
           Gunakan VM x86_64 berbasis RedHat/Fedora dengan systemd dan Job Type Run.
