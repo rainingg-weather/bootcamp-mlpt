@@ -30,6 +30,18 @@
         group: mongod
         mode: "0755"
 
+    - name: Fix SELinux port for MongoDB
+      ansible.builtin.command:
+        cmd: semanage port -a -t mongod_port_t -p tcp 27017
+      failed_when: false
+      changed_when: false
+
+    - name: Restore SELinux context for MongoDB directories
+      ansible.builtin.command:
+        cmd: restorecon -Rv /var/lib/mongo /var/log/mongodb
+      failed_when: false
+      changed_when: false
+
     - name: Check MongoDB configuration
       ansible.builtin.command:
         cmd: mongod --config /etc/mongod.conf --configExpand
