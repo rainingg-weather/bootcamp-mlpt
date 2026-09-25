@@ -67,6 +67,22 @@
         enablerepo: "mongodb-org-{{ mongodb_series }}"
       notify: Restart MongoDB
 
+    - name: Create MongoDB data directory
+      ansible.builtin.file:
+        path: /var/lib/mongo
+        state: directory
+        owner: mongod
+        group: mongod
+        mode: "0755"
+
+    - name: Create MongoDB log directory
+      ansible.builtin.file:
+        path: /var/log/mongodb
+        state: directory
+        owner: mongod
+        group: mongod
+        mode: "0755"
+
     - name: Configure MongoDB for use inside the VM
       ansible.builtin.copy:
         dest: /etc/mongod.conf
